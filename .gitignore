@@ -9,3 +9,4 @@ rascunho_ebook.txt
 ebook/
 .env
 backend/.env
+docker-compose.yml
