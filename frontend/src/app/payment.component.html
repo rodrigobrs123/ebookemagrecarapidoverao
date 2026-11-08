@@ -1,0 +1,18 @@
+<header class="topo">
+  <a class="marca" routerLink="/">Voltar</a>
+  <span class="preco-topo">PIX</span>
+</header>
+
+<section class="espera">
+  @if (erro()) {
+    <p class="erro">{{ erro() }}</p>
+  } @else if (pedido()?.paid) {
+    <h1>Pagamento confirmado</h1>
+    <p>O PIX foi recebido. Agora o e-book pode ser baixado.</p>
+    <a class="botao" [href]="pedido()!.downloadPath">Baixar o PDF</a>
+  } @else {
+    <h1>Aguardando o PIX</h1>
+    <p>O checkout foi concluído no navegador, mas isso ainda não confirma o pagamento. O download só aparece quando o ASAAS avisar que o PIX foi recebido.</p>
+    <p class="aviso">Esta página atualiza sozinha.</p>
+  }
+</section>

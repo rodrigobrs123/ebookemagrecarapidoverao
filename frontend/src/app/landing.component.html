@@ -1,0 +1,47 @@
+<header class="topo">
+  <span class="marca">Edição de verão</span>
+  <span class="preco-topo">R$ 12,99 no PIX</span>
+</header>
+
+<section class="hero">
+  <img class="capa" src="capa.jpg" alt="Capa do e-book: casal na praia">
+  <div>
+    <p class="selo">Guia focado em homens</p>
+    <h1>Como emagrecer rápido para <em>o verão</em></h1>
+    <p class="resumo">Mindset, roupas, alimentação e treino sem exagero. Um PDF direto ao ponto, para começar com o que você tem hoje.</p>
+    <ul class="pilares">
+      <li>01 Mindset</li>
+      <li>02 Roupas</li>
+      <li>03 Alimentação</li>
+      <li>04 Treino</li>
+    </ul>
+  </div>
+</section>
+
+<section class="compra">
+  <article class="card">
+    <p class="valor">R$ 12,99 <small>pagamento único</small></p>
+    <p>O checkout é do ASAAS e aceita somente PIX. O PDF aparece para download depois que o pagamento for confirmado.</p>
+    <form (ngSubmit)="pagar()">
+      <label for="nome">Nome</label>
+      <input id="nome" name="nome" [(ngModel)]="nome" required autocomplete="name">
+
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" [(ngModel)]="email" required autocomplete="email">
+
+      <label for="cpf">CPF ou CNPJ</label>
+      <input id="cpf" name="cpf" [(ngModel)]="cpf" required inputmode="numeric" autocomplete="off">
+
+      <button type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Abrindo o PIX...' : 'Pagar com PIX' }}
+      </button>
+    </form>
+    @if (erro()) {
+      <p class="erro">{{ erro() }}</p>
+    }
+  </article>
+  <aside class="card aviso">
+    <p>Este material é educativo e não substitui acompanhamento médico, nutricional ou de educação física. Não existe garantia de perda de peso em um prazo específico.</p>
+    <p>O link do e-book não fica visível antes da confirmação do PIX.</p>
+  </aside>
+</section>
