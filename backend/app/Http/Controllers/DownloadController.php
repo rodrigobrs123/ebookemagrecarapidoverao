@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
+use App\Services\OrderStore;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadController extends Controller
 {
-    public function __invoke(string $token): BinaryFileResponse
+    public function __invoke(string $token, OrderStore $orders): BinaryFileResponse
     {
-        $order = Order::query()->where('download_token', $token)->first();
+        $order = $orders->findByDownloadToken($token);
 
         if ($order === null || ! $order->isPaid()) {
             abort(403, 'O download só fica disponível depois da confirmação do pagamento.');

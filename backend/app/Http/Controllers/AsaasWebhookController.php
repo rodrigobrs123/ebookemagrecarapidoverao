@@ -2,18 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AsaasWebhook;
-use App\Models\Order;
 use App\Services\AsaasCheckout;
 use App\Services\BrevoMailer;
+use App\Services\OrderStore;
+use App\Support\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class AsaasWebhookController extends Controller
 {
-    public function __invoke(Request $request, AsaasCheckout $asaas, BrevoMailer $brevo): JsonResponse
-    {
+    public function __invoke(
+        Request $request,
+        AsaasCheckout $asaas,
+        BrevoMailer $brevo,
+        OrderStore $orders,
+    ): JsonResponse {
         $expected = (string) config('services.asaas.webhook_token');
         $received = (string) $request->header('asaas-access-token', '');
 
@@ -22,21 +26,8 @@ class AsaasWebhookController extends Controller
         }
 
         $payload = $request->json()->all();
-        $eventId = isset($payload['id']) ? (string) $payload['id'] : null;
-
-        if ($eventId !== null && AsaasWebhook::query()->where('event_id', $eventId)->exists()) {
-            return response()->json(['ok' => true]);
-        }
-
-        $order = $this->findOrder($payload);
+        $order = $this->findOrder($orders, $payload);
         $event = isset($payload['event']) ? (string) $payload['event'] : null;
-
-        $webhook = AsaasWebhook::create([
-            'order_id' => $order?->id,
-            'event' => $event,
-            'event_id' => $eventId,
-            'payload' => $payload,
-        ]);
 
         if ($order !== null) {
             $paymentId = data_get($payload, 'payment.id');
@@ -47,7 +38,7 @@ class AsaasWebhookController extends Controller
             $becamePaid = false;
             if ($this->paymentReceived($payload) && ! $order->isPaid()) {
                 $order->status = 'paid';
-                $order->paid_at = now();
+                $order->paid_at = now()->toIso8601String();
                 $becamePaid = true;
             } elseif (! $order->isPaid() && in_array($event, ['CHECKOUT_CANCELED', 'CHECKOUT_EXPIRED'], true)) {
                 $order->status = $event === 'CHECKOUT_EXPIRED' ? 'expired' : 'canceled';
@@ -57,20 +48,15 @@ class AsaasWebhookController extends Controller
             $asaas->syncPayer($order, $this->customerId($payload));
             $order->refresh();
 
-            if (($becamePaid || $order->isPaid()) && $order->email_sent_at === null) {
+            if (($becamePaid || $order->isPaid()) && empty($order->email_sent_at)) {
                 try {
                     $brevo->sendPurchaseEmail($order);
                 } catch (\Throwable $exception) {
                     Log::warning('E-mail Brevo não enviado', [
-                        'order_id' => $order->id,
+                        'public_id' => $order->public_id,
                         'message' => $exception->getMessage(),
                     ]);
                 }
-            }
-
-            if ($webhook->order_id === null) {
-                $webhook->order_id = $order->id;
-                $webhook->save();
             }
         }
 
@@ -86,31 +72,30 @@ class AsaasWebhookController extends Controller
             || $paymentStatus === 'RECEIVED';
     }
 
-    private function findOrder(array $payload): ?Order
+    private function findOrder(OrderStore $orders, array $payload): ?Order
     {
         $checkoutId = data_get($payload, 'checkout.id')
             ?? data_get($payload, 'payment.checkoutSession');
         $external = data_get($payload, 'checkout.externalReference')
             ?? data_get($payload, 'payment.externalReference');
-        $paymentId = data_get($payload, 'payment.id');
         $paymentLink = data_get($payload, 'payment.paymentLink');
 
         if (is_string($checkoutId) && $checkoutId !== '') {
-            $order = Order::query()->where('asaas_checkout_id', $checkoutId)->first();
+            $order = $orders->findByCheckoutId($checkoutId);
             if ($order !== null) {
                 return $order;
             }
         }
 
         if (is_string($paymentLink) && $paymentLink !== '') {
-            $order = Order::query()->where('asaas_checkout_id', $paymentLink)->first();
+            $order = $orders->findByCheckoutId($paymentLink);
             if ($order !== null) {
                 return $order;
             }
         }
 
         if (is_string($external) && $external !== '') {
-            return Order::query()->where('public_id', $external)->first();
+            return $orders->findByPublicId($external);
         }
 
         return null;

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Order;
+use App\Support\Order;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -21,7 +21,7 @@ class BrevoMailer
             return;
         }
 
-        if ($order->email_sent_at !== null) {
+        if (! empty($order->email_sent_at)) {
             return;
         }
 
@@ -42,7 +42,7 @@ class BrevoMailer
             attachment: $attachment,
         );
 
-        $order->email_sent_at = now();
+        $order->email_sent_at = now()->toIso8601String();
         $order->save();
     }
 

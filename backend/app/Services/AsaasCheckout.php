@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Order;
+use App\Support\Order;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -108,9 +108,7 @@ class AsaasCheckout
                 $order->asaas_payment_id = $paymentId;
             }
 
-            if ($order->isDirty()) {
-                $order->save();
-            }
+            $order->save();
         } catch (\Throwable) {
             // A página do pedido continua disponível se o ASAAS não responder.
         }
@@ -159,16 +157,7 @@ class AsaasCheckout
             && $paymentId === $order->asaas_payment_id
             && ($sameCheckout || $sameReference);
 
-        if (! $sameCheckout && ! $sameReference && ! $sameSavedId) {
-            return false;
-        }
-
-        $taken = Order::query()
-            ->where('asaas_payment_id', $paymentId)
-            ->where('id', '!=', $order->id)
-            ->exists();
-
-        return ! $taken;
+        return $sameCheckout || $sameReference || $sameSavedId;
     }
 
     private function firstPayment(string $path): ?array
