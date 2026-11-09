@@ -50,7 +50,10 @@ class AsaasWebhookSync
             $sameUrl = ($existing['url'] ?? null) === $webhookUrl;
             $sameEvents = $this->sameEvents($existing['events'] ?? [], $payload['events']);
             $sameVersion = (int) ($existing['apiVersion'] ?? 0) === 3;
-            if ($sameUrl && $sameEvents && $sameVersion && ($existing['enabled'] ?? false) === true) {
+            $enabled = ($existing['enabled'] ?? false) === true;
+            $interrupted = ($existing['interrupted'] ?? false) === true;
+            // Asaas marca interrupted=true após falhas; precisa reativar com PUT.
+            if ($sameUrl && $sameEvents && $sameVersion && $enabled && ! $interrupted) {
                 return $webhookUrl;
             }
             $this->request('PUT', '/webhooks/'.$id, $payload);

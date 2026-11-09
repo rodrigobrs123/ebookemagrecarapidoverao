@@ -127,7 +127,39 @@ class AsaasCheckout
         }
     }
 
-    private function findPayment(Order $order): ?array
+    /**
+     * Fallback quando o webhook do Asaas falhou/interrupted: consulta o pagamento na API.
+     */
+    public function syncPaidStatus(Order $order): bool
+    {
+        if ($order->isPaid()) {
+            return false;
+        }
+
+        $payment = $this->findPayment($order);
+        if ($payment === null) {
+            return false;
+        }
+
+        $status = (string) ($payment['status'] ?? '');
+        if (! in_array($status, ['RECEIVED', 'CONFIRMED'], true)) {
+            return false;
+        }
+
+        $paymentId = is_string($payment['id'] ?? null) ? $payment['id'] : null;
+        if ($paymentId !== null) {
+            $order->asaas_payment_id = $paymentId;
+        }
+        $order->status = 'paid';
+        $order->paid_at = now();
+        $order->save();
+
+        $this->syncPayer($order, is_string($payment['customer'] ?? null) ? $payment['customer'] : null);
+
+        return true;
+    }
+
+    public function findPayment(Order $order): ?array
     {
         $candidates = [];
 

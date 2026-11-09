@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AsaasCheckout;
+use App\Services\BrevoMailer;
 use App\Services\OrderStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,11 +60,38 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function show(string $publicId, OrderStore $orders): JsonResponse
-    {
+    public function show(
+        string $publicId,
+        OrderStore $orders,
+        AsaasCheckout $asaas,
+        BrevoMailer $brevo,
+    ): JsonResponse {
         $order = $orders->findByPublicId($publicId);
         if ($order === null) {
             abort(404);
+        }
+
+        if (! $order->isPaid()) {
+            try {
+                if ($asaas->syncPaidStatus($order)) {
+                    $order->refresh();
+                    if ($order->email_sent_at === null) {
+                        try {
+                            $brevo->sendPurchaseEmail($order);
+                        } catch (\Throwable $exception) {
+                            Log::warning('E-mail Brevo não enviado no sync de status', [
+                                'public_id' => $order->public_id,
+                                'message' => $exception->getMessage(),
+                            ]);
+                        }
+                    }
+                }
+            } catch (\Throwable $exception) {
+                Log::warning('Falha ao sincronizar pagamento no Asaas', [
+                    'public_id' => $publicId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([
