@@ -144,7 +144,7 @@ if (caminho.startsWith("/pagamento/")) {
       if (pedido.paid && pedido.downloadPath) {
         sessionStorage.removeItem(chavePedido);
         titulo.textContent = "Pagamento confirmado";
-        texto.textContent = "O PIX foi recebido. O botão abaixo abre o PDF do e-book.";
+        texto.textContent = "O PIX foi recebido. O botão abaixo abre o PDF do e-book. Uma cópia também foi enviada por e-mail — confira a caixa de entrada e o spam.";
         baixar.href = pedido.downloadPath;
         baixar.hidden = false;
         return true;
