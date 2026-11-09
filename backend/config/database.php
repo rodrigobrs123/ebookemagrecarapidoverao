@@ -47,7 +47,8 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             // EthioDeploy injeta DATABASE_URL; Laravel 11+ lê DB_URL.
-            'url' => env('DB_URL', env('DATABASE_URL')),
+            // Usar ?: para não ficar preso a DB_URL="" vazio.
+            'url' => env('DB_URL') ?: env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'laravel'),
@@ -67,7 +68,7 @@ return [
 
         'mariadb' => [
             'driver' => 'mariadb',
-            'url' => env('DB_URL', env('DATABASE_URL')),
+            'url' => env('DB_URL') ?: env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'laravel'),

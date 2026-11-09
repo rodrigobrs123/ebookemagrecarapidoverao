@@ -14,14 +14,24 @@ class CheckoutController extends Controller
 {
     public function store(Request $request, AsaasCheckout $asaas, OrderStore $orders): JsonResponse
     {
-        $order = $orders->create([
-            'public_id' => (string) Str::uuid(),
-            'download_token' => Str::random(48),
-            'amount' => 12.99,
-            'status' => 'pending',
-        ]);
-
         $origin = $request->string('origin')->toString() ?: null;
+
+        try {
+            $order = $orders->create([
+                'public_id' => (string) Str::uuid(),
+                'download_token' => Str::random(48),
+                'amount' => 12.99,
+                'status' => 'pending',
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Falha ao gravar pedido no banco', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Banco de dados indisponível. Confira o Addon MySQL, DB_CONNECTION=mysql e o Start Command com migrate.',
+            ], 503);
+        }
 
         try {
             $checkout = $asaas->create($order, $origin);

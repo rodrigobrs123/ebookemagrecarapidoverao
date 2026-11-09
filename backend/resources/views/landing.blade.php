@@ -102,6 +102,6 @@
     <p><a class="btn claro" href="/">Voltar à página</a></p>
   </main>
 
-  <script src="/app.js?v=20261109b"></script>
+  <script src="/app.js?v=20261109c"></script>
 </body>
 </html>
