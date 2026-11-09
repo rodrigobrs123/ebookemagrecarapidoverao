@@ -106,13 +106,20 @@ async function abrirPagamento(evento) {
 }
 
 async function origemPublica() {
+  // Em produção (EthioDeploy) a própria origem HTTPS já é a URL pública.
+  // O painel do Ngrok em 127.0.0.1 só existe no ambiente local.
+  const host = location.hostname;
+  if (host !== "localhost" && host !== "127.0.0.1") {
+    return location.origin;
+  }
+
   try {
     const resposta = await fetch("http://127.0.0.1:4040/api/tunnels");
     const dados = await resposta.json();
     const tunel = (dados.tunnels || []).find((item) => String(item.public_url || "").startsWith("https://"));
     if (tunel?.public_url) return String(tunel.public_url).replace(/\/$/, "");
   } catch {
-    // Se o painel local do Ngrok não responder, usa a origem da página.
+    // Sem Ngrok local: o backend resolve a URL pública.
   }
   return location.origin;
 }

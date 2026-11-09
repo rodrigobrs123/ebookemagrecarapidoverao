@@ -14,7 +14,12 @@ class AsaasCheckout
     {
         $cover = storage_path('app/checkout-cover.jpg');
         if (! is_file($cover)) {
-            throw new RuntimeException('Imagem do produto não encontrada.');
+            throw new RuntimeException('Imagem do produto não encontrada no servidor.');
+        }
+
+        $apiKey = trim((string) config('services.asaas.key'));
+        if ($apiKey === '') {
+            throw new RuntimeException('ASAAS_API_KEY não configurada no servidor.');
         }
 
         try {
@@ -24,7 +29,7 @@ class AsaasCheckout
         }
 
         $response = Http::withHeaders([
-            'access_token' => (string) config('services.asaas.key'),
+            'access_token' => $apiKey,
             'User-Agent' => 'ebook-verao',
             'Accept' => 'application/json',
         ])->acceptJson()->post($this->endpoint('/checkouts'), [
@@ -53,7 +58,15 @@ class AsaasCheckout
                 ->filter()
                 ->implode(' ');
 
-            throw new RuntimeException($message !== '' ? $message : 'Não foi possível abrir o checkout.');
+            if ($message === '') {
+                $message = match ($response->status()) {
+                    401, 403 => 'ASAAS_API_KEY inválida ou incompleta no servidor. Se a chave começa com $, escape o cifrão no painel da EthioDeploy.',
+                    0 => 'Sem conexão com a API do Asaas a partir do servidor.',
+                    default => 'Não foi possível abrir o checkout (Asaas HTTP '.$response->status().').',
+                };
+            }
+
+            throw new RuntimeException($message);
         }
 
         $data = $response->json();

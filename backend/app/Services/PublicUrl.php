@@ -8,21 +8,23 @@ class PublicUrl
 {
     public function https(?string $hint = null): string
     {
-        foreach ([$hint, config('services.ngrok.url')] as $candidate) {
+        foreach ([$hint, config('app.url'), $this->fromRequest()] as $candidate) {
             $url = rtrim((string) $candidate, '/');
             if ($this->looksPublic($url)) {
                 return $url;
             }
         }
 
-        $fromRequest = rtrim((string) request()->getSchemeAndHttpHost(), '/');
-        if ($this->looksPublic($fromRequest)) {
-            return $fromRequest;
+        $ngrokConfigured = rtrim((string) config('services.ngrok.url'), '/');
+        if ($this->looksPublic($ngrokConfigured)) {
+            return $ngrokConfigured;
         }
 
-        $fromNgrok = $this->fromNgrok();
-        if ($fromNgrok !== null) {
-            return $fromNgrok;
+        if ($this->shouldProbeNgrok()) {
+            $fromNgrok = $this->fromNgrok();
+            if ($fromNgrok !== null) {
+                return $fromNgrok;
+            }
         }
 
         $base = rtrim((string) config('app.url'), '/');
@@ -30,7 +32,7 @@ class PublicUrl
             $base = str_replace('://localhost', '://127.0.0.1', $base);
         }
 
-        return $base;
+        return $base !== '' ? $base : 'http://127.0.0.1';
     }
 
     public function port(): int
@@ -42,7 +44,31 @@ class PublicUrl
 
     public function isNgrok(): bool
     {
-        return $this->looksPublic($this->https());
+        $host = (string) parse_url($this->https(), PHP_URL_HOST);
+
+        return str_contains($host, 'ngrok');
+    }
+
+    private function fromRequest(): string
+    {
+        try {
+            return rtrim((string) request()->getSchemeAndHttpHost(), '/');
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function shouldProbeNgrok(): bool
+    {
+        $appUrl = (string) config('app.url');
+        $host = (string) parse_url($appUrl, PHP_URL_HOST);
+
+        if (str_contains($host, 'ethiodeploy.app')) {
+            return false;
+        }
+
+        return app()->environment('local')
+            || in_array($host, ['localhost', '127.0.0.1', ''], true);
     }
 
     private function looksPublic(string $url): bool
@@ -61,7 +87,7 @@ class PublicUrl
     {
         foreach ($this->apis() as $api) {
             try {
-                $response = Http::timeout(2)->acceptJson()->get($api.'/api/tunnels');
+                $response = Http::timeout(1)->acceptJson()->get($api.'/api/tunnels');
                 if ($response->failed()) {
                     continue;
                 }
@@ -86,6 +112,7 @@ class PublicUrl
             rtrim((string) config('services.ngrok.api'), '/'),
             'http://ngrok:4040',
             'http://host.docker.internal:4040',
+            'http://127.0.0.1:4040',
         ])));
     }
 }

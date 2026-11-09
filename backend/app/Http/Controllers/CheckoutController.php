@@ -6,6 +6,7 @@ use App\Services\AsaasCheckout;
 use App\Services\OrderStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -20,10 +21,17 @@ class CheckoutController extends Controller
             'status' => 'pending',
         ]);
 
+        $origin = $request->string('origin')->toString() ?: null;
+
         try {
-            $checkout = $asaas->create($order, $request->string('origin')->toString() ?: null);
+            $checkout = $asaas->create($order, $origin);
         } catch (RuntimeException $exception) {
             $order->delete();
+            Log::warning('Falha ao criar checkout Asaas', [
+                'message' => $exception->getMessage(),
+                'origin' => $origin,
+                'app_url' => config('app.url'),
+            ]);
 
             return response()->json([
                 'message' => $this->mensagemCliente($exception->getMessage()),
@@ -60,7 +68,13 @@ class CheckoutController extends Controller
 
     private function mensagemCliente(string $message): string
     {
-        if ($message === '' || preg_match('/ngrok|webhook|localhost|URL pública/i', $message) === 1) {
+        if ($message === '') {
+            return 'Não foi possível abrir o pagamento. Tente de novo.';
+        }
+
+        // Erros de configuração/API devem aparecer; detalhes de ngrok local não.
+        if (preg_match('/\b(ngrok|URL pública indisponível)\b/i', $message) === 1
+            && ! str_contains(strtolower($message), 'asaas')) {
             return 'Não foi possível abrir o pagamento. Tente de novo.';
         }
 
