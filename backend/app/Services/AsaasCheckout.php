@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Support\Order;
+use App\Models\Order;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 

@@ -1,10 +1,8 @@
 .env
 backend/.env
 Prompt_Criacao_do_site.txt
-Como_Emagrecer_Rapido_para_o_Verao.pdf
 rascunho_ebook.txt
 ebook/
-docker-compose.yml
 
 # Pesados / não usados no deploy
 frontend/node_modules/
@@ -14,3 +12,8 @@ backend/vendor/
 backend/storage/app/orders/
 backend/database/database.sqlite
 *.Zone.Identifier
+
+# PDF do produto precisa ir no deploy (EthioDeploy)
+!Como_Emagrecer_Rapido_para_o_Verao.pdf
+!backend/storage/app/private/ebook.pdf
+!backend/storage/app/checkout-cover.jpg

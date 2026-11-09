@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AsaasWebhook;
+use App\Models\Order;
 use App\Services\AsaasCheckout;
 use App\Services\BrevoMailer;
 use App\Services\OrderStore;
-use App\Support\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +29,24 @@ class AsaasWebhookController extends Controller
         $payload = $request->json()->all();
         $order = $this->findOrder($orders, $payload);
         $event = isset($payload['event']) ? (string) $payload['event'] : null;
+        $eventId = data_get($payload, 'id');
+
+        if (is_string($eventId) && $eventId !== '') {
+            AsaasWebhook::query()->updateOrCreate(
+                ['event_id' => $eventId],
+                [
+                    'order_id' => $order?->id,
+                    'event' => $event,
+                    'payload' => $payload,
+                ],
+            );
+        } else {
+            AsaasWebhook::query()->create([
+                'order_id' => $order?->id,
+                'event' => $event,
+                'payload' => $payload,
+            ]);
+        }
 
         if ($order !== null) {
             $paymentId = data_get($payload, 'payment.id');
@@ -38,7 +57,7 @@ class AsaasWebhookController extends Controller
             $becamePaid = false;
             if ($this->paymentReceived($payload) && ! $order->isPaid()) {
                 $order->status = 'paid';
-                $order->paid_at = now()->toIso8601String();
+                $order->paid_at = now();
                 $becamePaid = true;
             } elseif (! $order->isPaid() && in_array($event, ['CHECKOUT_CANCELED', 'CHECKOUT_EXPIRED'], true)) {
                 $order->status = $event === 'CHECKOUT_EXPIRED' ? 'expired' : 'canceled';
@@ -48,7 +67,7 @@ class AsaasWebhookController extends Controller
             $asaas->syncPayer($order, $this->customerId($payload));
             $order->refresh();
 
-            if (($becamePaid || $order->isPaid()) && empty($order->email_sent_at)) {
+            if (($becamePaid || $order->isPaid()) && $order->email_sent_at === null) {
                 try {
                     $brevo->sendPurchaseEmail($order);
                 } catch (\Throwable $exception) {

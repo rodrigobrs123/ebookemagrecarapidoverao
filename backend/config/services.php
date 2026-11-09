@@ -32,7 +32,7 @@ return [
         'url' => env('ASAAS_BASE_URL', 'https://sandbox.asaas.com/api/v3'),
         'key' => env('ASAAS_API_KEY'),
         'webhook_token' => env('ASAAS_WEBHOOK_TOKEN'),
-        'ebook_path' => env('EBOOK_PATH', '/var/ebook/ebook.pdf'),
+        'ebook_path' => env('EBOOK_PATH', storage_path('app/private/ebook.pdf')),
     ],
 
     'ngrok' => [

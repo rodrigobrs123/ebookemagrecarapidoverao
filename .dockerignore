@@ -1,0 +1,17 @@
+.git
+.github
+frontend
+ebook
+backend/vendor
+backend/node_modules
+backend/storage/app/orders
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/database/database.sqlite
+*.Zone.Identifier
+Prompt_Criacao_do_site.txt
+rascunho_ebook.txt
+.env
+backend/.env

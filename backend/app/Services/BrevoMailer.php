@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Support\Order;
+use App\Models\Order;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -21,7 +21,7 @@ class BrevoMailer
             return;
         }
 
-        if (! empty($order->email_sent_at)) {
+        if ($order->email_sent_at !== null) {
             return;
         }
 
@@ -42,7 +42,7 @@ class BrevoMailer
             attachment: $attachment,
         );
 
-        $order->email_sent_at = now()->toIso8601String();
+        $order->email_sent_at = now();
         $order->save();
     }
 
@@ -90,8 +90,8 @@ class BrevoMailer
 
     private function pdfAttachment(): array
     {
-        $path = (string) config('services.asaas.ebook_path');
-        if (! is_file($path) || ! is_readable($path)) {
+        $path = app(EbookPath::class)->resolve();
+        if ($path === null) {
             throw new RuntimeException('Arquivo do e-book não encontrado para anexo.');
         }
 

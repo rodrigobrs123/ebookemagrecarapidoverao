@@ -48,8 +48,13 @@ class PublicUrl
     private function looksPublic(string $url): bool
     {
         $host = (string) parse_url($url, PHP_URL_HOST);
+        if ($host === '' || in_array($host, ['localhost', '127.0.0.1'], true)) {
+            return false;
+        }
 
-        return $host !== '' && str_contains($host, 'ngrok');
+        return str_contains($host, 'ngrok')
+            || str_contains($host, 'ethiodeploy.app')
+            || str_starts_with($url, 'https://');
     }
 
     private function fromNgrok(): ?string

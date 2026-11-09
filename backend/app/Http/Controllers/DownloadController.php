@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\EbookPath;
 use App\Services\OrderStore;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadController extends Controller
 {
-    public function __invoke(string $token, OrderStore $orders): BinaryFileResponse
+    public function __invoke(string $token, OrderStore $orders, EbookPath $ebookPath): BinaryFileResponse
     {
         $order = $orders->findByDownloadToken($token);
 
@@ -15,8 +16,8 @@ class DownloadController extends Controller
             abort(403, 'O download só fica disponível depois da confirmação do pagamento.');
         }
 
-        $path = (string) config('services.asaas.ebook_path');
-        if (! is_file($path)) {
+        $path = $ebookPath->resolve();
+        if ($path === null) {
             abort(404, 'Arquivo do e-book não encontrado.');
         }
 

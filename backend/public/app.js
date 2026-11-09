@@ -3,7 +3,8 @@ const statusBox = document.querySelector("#status");
 const caminho = location.pathname.replace(/\/$/, "") || "/";
 const botoes = [document.querySelector("#pagar-topo"), document.querySelector("#pagar")].filter(Boolean);
 const textoBotao = "Quero o meu PDF por R$ 12,99";
-const chavePedido = "pedidoEbookVerao";
+const chavePedido = "pedidoEbookVeraoNgrok";
+sessionStorage.removeItem("pedidoEbookVerao");
 
 function definirBotoes(desabilitado, texto) {
   botoes.forEach((botao) => {
@@ -104,7 +105,6 @@ async function abrirPagamento(evento) {
   }
 }
 
-/*
 async function origemPublica() {
   try {
     const resposta = await fetch("http://127.0.0.1:4040/api/tunnels");
@@ -115,12 +115,7 @@ async function origemPublica() {
     // Se o painel local do Ngrok não responder, usa a origem da página.
   }
   return location.origin;
-}*/
-
-function origemPublica() {
-  return location.origin;
 }
-
 
 function mensagemCliente(texto) {
   const bruto = String(texto || "");

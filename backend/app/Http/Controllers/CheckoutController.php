@@ -16,21 +16,15 @@ class CheckoutController extends Controller
         $order = $orders->create([
             'public_id' => (string) Str::uuid(),
             'download_token' => Str::random(48),
-            'customer_name' => null,
-            'email' => null,
-            'cpf_cnpj' => null,
             'amount' => 12.99,
             'status' => 'pending',
-            'asaas_checkout_id' => null,
-            'asaas_payment_id' => null,
-            'paid_at' => null,
-            'email_sent_at' => null,
-            'created_at' => now()->toIso8601String(),
         ]);
 
         try {
             $checkout = $asaas->create($order, $request->string('origin')->toString() ?: null);
         } catch (RuntimeException $exception) {
+            $order->delete();
+
             return response()->json([
                 'message' => $this->mensagemCliente($exception->getMessage()),
             ], 422);
