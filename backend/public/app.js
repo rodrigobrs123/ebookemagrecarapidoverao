@@ -3,8 +3,7 @@ const statusBox = document.querySelector("#status");
 const caminho = location.pathname.replace(/\/$/, "") || "/";
 const botoes = [document.querySelector("#pagar-topo"), document.querySelector("#pagar")].filter(Boolean);
 const textoBotao = "Quero o meu PDF por R$ 12,99";
-const chavePedido = "pedidoEbookVeraoNgrok";
-sessionStorage.removeItem("pedidoEbookVerao");
+const chavePedido = "pedidoEbookVerao";
 
 function definirBotoes(desabilitado, texto) {
   botoes.forEach((botao) => {
@@ -81,11 +80,11 @@ async function abrirPagamento(evento) {
     const resposta = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ origin: await origemPublica() }),
+      body: JSON.stringify({ origin: location.origin }),
     });
-    const dados = await resposta.json();
+    const dados = await resposta.json().catch(() => ({}));
     if (!resposta.ok || !dados.checkoutUrl || !dados.publicId) {
-      throw new Error(mensagemCliente(dados.message));
+      throw new Error(mensagemCliente(dados.message || ("Erro HTTP " + resposta.status)));
     }
 
     sessionStorage.setItem(chavePedido, dados.publicId);
@@ -103,25 +102,6 @@ async function abrirPagamento(evento) {
     erro.scrollIntoView({ block: "center" });
     definirBotoes(false, textoBotao);
   }
-}
-
-async function origemPublica() {
-  // Em produção (EthioDeploy) a própria origem HTTPS já é a URL pública.
-  // O painel do Ngrok em 127.0.0.1 só existe no ambiente local.
-  const host = location.hostname;
-  if (host !== "localhost" && host !== "127.0.0.1") {
-    return location.origin;
-  }
-
-  try {
-    const resposta = await fetch("http://127.0.0.1:4040/api/tunnels");
-    const dados = await resposta.json();
-    const tunel = (dados.tunnels || []).find((item) => String(item.public_url || "").startsWith("https://"));
-    if (tunel?.public_url) return String(tunel.public_url).replace(/\/$/, "");
-  } catch {
-    // Sem Ngrok local: o backend resolve a URL pública.
-  }
-  return location.origin;
 }
 
 function mensagemCliente(texto) {
