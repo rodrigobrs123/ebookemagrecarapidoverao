@@ -60,8 +60,8 @@
         <img src="/img/topico_treino.jpg" alt="Garrafa, halteres e tênis num canto de treino">
         <div>
           <span>04</span>
-          <h2>Treino</h2>
-          <p>Estímulo sem exagero. O objetivo é continuar treinando, não se destruir para impressionar alguém.</p>
+          <h2>Hábitos no treino</h2>
+          <p>Dicas do que fazer e do que evitar. O objetivo é continuar treinando, sem se destruir para impressionar alguém.</p>
         </div>
       </article>
     </section>
