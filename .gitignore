@@ -2,6 +2,7 @@
 backend/.env
 Prompt_Criacao_do_site.txt
 rascunho_ebook.txt
+chaves_PRD.txt
 ebook/
 
 # Pesados / não usados no deploy
